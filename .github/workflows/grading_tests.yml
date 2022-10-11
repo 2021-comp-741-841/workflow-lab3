@@ -1,0 +1,57 @@
+name: Grading Tests for COMP-841
+
+on:
+  workflow_call:
+    inputs:
+      tests_url:
+        description: 'Public URL for Python unit tests'
+        type: string
+        required: true
+
+jobs:
+  grading-tests-comp-841:
+    name: Grading Tests for COMP-841
+    runs-on: ubuntu-latest
+
+    steps:
+    - id: checkout-repo
+      name: Checkout repository
+      uses: actions/checkout@v3
+    - id: download-grading-tests
+      name: Download grading tests from public URL
+      env:
+        TESTS_URL: ${{ inputs.tests_url }}
+      shell: bash
+      run: |
+        # Download grading tests
+        mkdir grading_tests
+        echo "Downloading grading tests from:"
+        echo "$TESTS_URL"
+        echo ""
+        curl "$TESTS_URL" -o grading_tests/grading_tests.py
+        echo ""
+        touch grading_tests/__init__.py
+        echo "Test files:"
+        ls -l grading_tests
+    - id: setup-python
+      name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+        cache: 'pip'
+    - id: install-dependencies
+      name: Install dependencies
+      shell: bash
+      run: |
+        # Install dependencies (globally on the GitHub Actions runner)
+        python -m pip install --upgrade pip
+        python -m pip install pytest
+        pytest -V
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - id: test
+      name: Run unit tests
+      shell: bash
+      run: |
+        # Run tests
+        echo "Running test directly"
+        python -m unittest -v grading_tests/grading_tests.py
